@@ -1,0 +1,89 @@
+---
+title: "6414_project"
+author: "Conor Kennedy"
+date: "11/17/2019"
+output: html_document
+---
+Load Data
+```{r}
+data = read.csv("happiness_suicide_dataset.csv", header = TRUE)
+head(data)
+```
+
+Region ANOVA
+```{r}
+library(ggplot2)
+#model1 <- lm(data$Suicide_rate~data$region+0,data=data)
+ggplot(data, aes(x=region, y=Suicides_per_100K)) + geom_boxplot() + theme(axis.text.x  = element_text(angle=90, vjust=0.5))+ggtitle("Suicides per 100K Pop with Respect to World Region - ANOVA")
+```
+
+```{r}
+model1 <- aov(data$Suicides_per_100K~data$region)
+summary(model1)
+```
+
+```{r}
+#TukeyHSD(model1, conf.level = 0.95)
+region_tukey <- as.data.frame(TukeyHSD(model1)$`data$region`)
+region_tukey_sig <- subset(region_tukey, `p adj` < 0.01)
+region_tukey_sig
+region_tukey
+```
+
+Load categorical data
+
+```{r}
+cat_data <- read.csv("happiness_suicide_dataset_with_cat.csv", header = TRUE)
+head(cat_data)
+```
+
+ANOVA on age
+```{r}
+ggplot(cat_data, aes(x=age, y=Suicides_per_100K)) + geom_boxplot() + theme(axis.text.x  = element_text(angle=90, vjust=0.5))
+age_model <- aov(Suicides_per_100K~age, data=cat_data)
+summary(age_model)
+```
+```{r}
+TukeyHSD(age_model, conf.level = 0.95)
+```
+Removing the 5-14 category and rerunning
+```{r}
+age_dropped_data <- cat_data[cat_data$age %in% c("15-24 years",
+"25-34 years",
+"35-54 years",
+"55-74 years",
+"75+ years"
+), ]
+ggplot(age_dropped_data, aes(x=age, y=Suicides_per_100K)) + geom_boxplot() + theme(axis.text.x  = element_text(angle=90, vjust=0.5))+ggtitle("Suicide Rates with respect to Age Group - ANOVA")
+age_dropped_model <- aov(Suicides_per_100K~age, data=age_dropped_data)
+summary(age_dropped_model)
+TukeyHSD(age_dropped_model, conf.level = 0.95)
+```
+
+ANOVA on gender
+
+```{r}
+ggplot(cat_data, aes(x=sex, y=Suicides_per_100K)) + geom_boxplot() + theme(axis.text.x  = element_text(angle=90, vjust=0.5))+ggtitle("Suicide Rate with Respect to Sex - ANOVA")
+sex_model <- aov(Suicides_per_100K~sex, data=cat_data)
+summary(sex_model)
+```
+```{r}
+TukeyHSD(sex_model, conf.level = 0.90)
+```
+
+Two-way ANOVA on age and gender
+```{r}
+library("ggpubr")
+ggboxplot(age_dropped_data, x = "age", y = "Suicides_per_100K", color = "sex", title= "Suicides per 100K Pop with Respect to Age and Sex - Two-way ANOVA")
+```
+
+```{r}
+age_sex_aov <- aov(Suicides_per_100K ~ age * sex, data = age_dropped_data)
+summary(age_sex_aov)
+aov2 <- as.data.frame(TukeyHSD(age_sex_aov)$`age:sex`)
+
+aov2_sig <- subset(aov2, `p adj` < 0.01)
+aov2_sig
+
+```
+
